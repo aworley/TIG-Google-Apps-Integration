@@ -12,6 +12,7 @@ require_once 'google-api-php-client/src/contrib/Google_DriveService.php';
 	define("UNIQUE_FOLDER_ID", "ghi789");
 	?>
 */
+require_once 'google-api-php-client/src/contrib/Google_CalendarService.php';
 require_once('/var/www/html/api/v1/google_drive_config.php');
 
 $url_array = explode('?', 'https://'.$_SERVER ['HTTP_HOST'].$_SERVER['REQUEST_URI']);
@@ -26,7 +27,7 @@ class PikaDrive {
     $this->gClient->setClientId(CLIENT_ID);
     $this->gClient->setClientSecret(CLIENT_SECRET);
     $this->gClient->setRedirectUri(URL);
-    $this->gClient->setScopes(array('https://www.googleapis.com/auth/drive'));
+    $this->gClient->setScopes(array('https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/calendar'));
 
     if($username != null && self::setToken($username)){
       self::authenticate();
@@ -144,4 +145,35 @@ class PikaDrive {
     return false;
   }
 
+  function createEvent($to, $summary, $description, $startDate, $endDate = null){
+    $optParams = array(
+      'sendNotifications' => TRUE
+    );
+
+    $event = new Google_Event(); 
+    $event->setSummary($summary);
+    $event->setDescription($description);
+    
+    $start = new Google_EventDateTime();
+    $start->setDateTime($startDate);
+    $event->setStart($start);
+
+    if($endDate == null){
+      $endDate = $startDate;
+    }
+    $end = new Google_EventDateTime();
+    $end->setDateTime($endDate);
+    $event->setEnd($end);
+
+    $attendees = Array();
+    foreach ($to as $e) {
+      $g_ea = new Google_EventAttendee();
+      $g_ea->setEmail($e);
+      $attendees[] = $g_ea;
+    }
+    $event->setAttendees($attendees);
+
+    $service = new Google_CalendarService($this->gClient);
+    return $service->events->insert('primary', $event, $optParams);
+  }
 }
