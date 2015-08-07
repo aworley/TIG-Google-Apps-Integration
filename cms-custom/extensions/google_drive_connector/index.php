@@ -116,17 +116,17 @@ class PikaDrive {
     return str_replace('?', $value, $q);
   }
 
-  function listFiles($folderId = "", $trashed = false){
+  function listFiles($folderId = "", $trashed = false, $q = ""){
     $parameters = "";
-    $q = "";
-    
+     
     if($folderId)
       $q = self::generateQueryString($q, "'?' in parents", $folderId);
     if(!$trashed)
       $q = self::generateQueryString($q, "trashed = ?", "false");
 
     $parameters['q'] = $q;
-
+	$parameters['maxResults'] = '1000';
+	
     $service = new Google_DriveService($this->gClient);
     $files = $service->files->listFiles($parameters);
 
